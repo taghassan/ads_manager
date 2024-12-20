@@ -315,6 +315,7 @@ mixin HasNativeAdsMixin on GetxController {
 
   AddModel? getAdItem(int index) {
     int loadedAdIndexValue = loadedAdIndex(index);
+    // AppLogger.it.logWarning("loadedAdIndexValue $index $loadedAdIndexValue");
     // controller.bregAraabSongs.logger.i("loadedAdIndex $loadedAdIndex $adItem ${controller.loadedSuccessfullyAds.length}");
     return loadedAdIndexValue < loadedSuccessfullyAds.length
         ? loadedSuccessfullyAds[loadedAdIndexValue]
@@ -338,24 +339,28 @@ mixin HasNativeAdsMixin on GetxController {
 
 
           for (String adId in adUnitId) {
-            adsMixinLogger.w("adId = $adId");
-            ListNativeAdUnits adUnits = ListNativeAdUnits(
-              adUnitId: adId,
-              onAdLoaded: (p0, p1) {
-                adsMixinLogger.w("p0.adUnitId ${p0.adUnitId}");
-                loadedSuccessfullyAds
-                    .add(AddModel(adUnitId: p0.adUnitId, adUnit: p0, nativeAd: p1));
-                update();
-              },
-              onAdFailedToLoad: (p0, error) {
-                adsMixinLogger.e("p0.adUnitId ${p0.adUnitId}");
-                adsMixinLogger.e("message ${error.message}");
-                adsMixinLogger.e("code ${error.code}");
-                adsMixinLogger.e("domain ${error.domain}");
-                adsMixinLogger.e("responseInfo ${error.responseInfo}");
-              },
-            );
-            adUnits.loadAd();
+            try{
+              adsMixinLogger.w("adId = $adId");
+              ListNativeAdUnits adUnits = ListNativeAdUnits(
+                adUnitId: adId,
+                onAdLoaded: (p0, p1) {
+                  adsMixinLogger.w("p0.adUnitId ${p0.adUnitId}");
+                  loadedSuccessfullyAds
+                      .add(AddModel(adUnitId: p0.adUnitId, adUnit: p0, nativeAd: p1));
+                  update();
+                },
+                onAdFailedToLoad: (p0, error) {
+                  adsMixinLogger.e("p0.adUnitId ${p0.adUnitId}");
+                  adsMixinLogger.e("message ${error.message}");
+                  adsMixinLogger.e("code ${error.code}");
+                  adsMixinLogger.e("domain ${error.domain}");
+                  adsMixinLogger.e("responseInfo ${error.responseInfo}");
+                },
+              );
+              adUnits.loadAd();
+            }catch(e){
+              AppLogger.it.logError("adUnit error $adId\n$e ");
+            }
           }
 
 
@@ -377,9 +382,13 @@ mixin HasNativeAdsMixin on GetxController {
   }
 
 
-  Widget nativeAdWidget(int index) {
-
-    AddModel? adItem = getAdItem(index);
+  Widget nativeAdWidget(int index,{AddModel? useAd}) {
+    AddModel? adItem;
+    if(useAd==null) {
+       adItem = getAdItem(index);
+    }else{
+      adItem=useAd;
+    }
 
     if (adItem != null) {
       loadedToScreenAdIds.add(adItem.adUnitId);

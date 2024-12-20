@@ -8,6 +8,7 @@ export 'ads_interval.dart';
 export 'ads_service.dart';
 export 'ad_helper.dart';
 export 'logger_utils.dart';
+export 'package:ads_manager/main.dart';
 
 void main()async {
   await initGoogleAdsService(stayAwake: true);

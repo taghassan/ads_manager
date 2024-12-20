@@ -198,15 +198,27 @@ class AdsInterval extends GetView<AdsIntervalController> {
             controller.loadBannerWidget()??const SizedBox.shrink(),
             Expanded(
               child: ListView.builder(
-                itemCount: 150,
+                itemCount: controller.loadedSuccessfullyAds.length,
                 itemBuilder: (context, index) {
-                  if (controller.isAdIndex(index)) {
-                    return controller.nativeAdWidget(index);
-                  }
 
-                  final itemIndex = controller.getOriginalItemIndex(index);
+                  return Column(
+                    children: [
+                      controller.nativeAdWidget(index,useAd: controller.loadedSuccessfullyAds[index]),
+                     SizedBox(
+                       width: Get.width,
+                       height:80,
+                       child:  PlusCardContainer(child: Center(child: Text("Item $index"),),),
 
-                  return PlusCardContainer(child: Text("Item $itemIndex"));
+                     )
+                    ],
+                  );
+                  // if (controller.isAdIndex(index)) {
+                  //   return controller.nativeAdWidget(index);
+                  // }
+                  //
+                  // final itemIndex = controller.getOriginalItemIndex(index);
+                  //
+                  // return PlusCardContainer(child: Text("Item $itemIndex"));
                 },
               ),
             ),
