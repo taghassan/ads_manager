@@ -14,23 +14,25 @@ class AdsIntervalBinding extends Bindings {
   }
 }
 
-
 class AdsIntervalController extends FullLifeCycleController
     with
         FullLifeCycleMixin,
         StateMixin,
         HasNativeAdsMixin,
         InterstitialAdState,
-        HasRewardedAdsMixin ,HasBannerAd{
+        HasRewardedAdsMixin,
+        HasBannerAd {
   Timer? timer;
   int timeStep = 2;
   int type = 0;
 
   AdsInitConfig? adsInitConfig;
 
+  final ScrollController scrollController = ScrollController();
+  Timer? scrollTimer;
+  bool isScrolling=false;
   @override
   void onInit() async {
-
     initIntervalAds();
     change(null, status: RxStatus.success());
 
@@ -42,32 +44,58 @@ class AdsIntervalController extends FullLifeCycleController
     disposeNativeAds();
     disposeRewordAds();
     timer?.cancel();
+
+    scrollTimer?.cancel(); // Cancel the timer to prevent memory leaks
+    scrollController.dispose(); // Dispose of the controller
+
     super.onClose();
   }
 
-  initIntervalAds(){
-
+  initIntervalAds() {
     loadInterstitialAdAd(interstitialAdId: adsInitConfig?.interstitialAdUnitId);
 
-    loadAdRewarded(logger: Logger(),forceUseId: adsInitConfig?.rewardedAdUnitId);
+    loadAdRewarded(
+        logger: Logger(), forceUseId: adsInitConfig?.rewardedAdUnitId);
 
     loadBannerAd(forceUseId: adsInitConfig?.bannerAdUnitId);
 
-    initAds(adUnitIds:adsInitConfig?.nativeAdUnitIds?? [
-      'ca-app-pub-8107574011529731/1677462684',
-      'ca-app-pub-8107574011529731/3520897512',
-      'ca-app-pub-8107574011529731/9695984706',
-      'ca-app-pub-8107574011529731/9894734170',
-      'ca-app-pub-8107574011529731/3876120737',
-      'ca-app-pub-8107574011529731/6893898838',
-      'ca-app-pub-8107574011529731/1305797714',
-      'ca-app-pub-8107574011529731/7123260860',
-      'ca-app-pub-8107574011529731/3403507702',
-      'ca-app-pub-8107574011529731/6303534606',
-      'ca-app-pub-8107574011529731/5899648847'
-    ]);
+    initAds(
+        adUnitIds: adsInitConfig?.nativeAdUnitIds ??
+            [
+              'ca-app-pub-8107574011529731/1677462684',
+              'ca-app-pub-8107574011529731/3520897512',
+              'ca-app-pub-8107574011529731/9695984706',
+              'ca-app-pub-8107574011529731/9894734170',
+              'ca-app-pub-8107574011529731/3876120737',
+              'ca-app-pub-8107574011529731/6893898838',
+              'ca-app-pub-8107574011529731/1305797714',
+              'ca-app-pub-8107574011529731/7123260860',
+              'ca-app-pub-8107574011529731/3403507702',
+              'ca-app-pub-8107574011529731/6303534606',
+              'ca-app-pub-8107574011529731/5899648847'
+            ]);
 
-    adInterval = adsInitConfig?.adInterval??1;
+    adInterval = adsInitConfig?.adInterval ?? 1;
+  }
+
+  void startAutoScroll() {
+    if (scrollTimer == null || !scrollTimer!.isActive) {
+      scrollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+        if (scrollController.hasClients) {
+          double maxScroll = scrollController.position.maxScrollExtent;
+          double currentScroll = scrollController.offset;
+          double delta = 2.0; // Adjust this value for scroll speed
+
+          if (currentScroll + delta >= maxScroll) {
+            scrollController.jumpTo(0); // Reset to the top
+          } else {
+            scrollController.jumpTo(currentScroll + delta);
+          }
+        }
+      });
+      isScrolling = true;
+      update();
+    }
   }
 
   void startAdsTimer() async {
@@ -77,7 +105,7 @@ class AdsIntervalController extends FullLifeCycleController
     }
 
     // runs every 1 second
-    timer = Timer.periodic( Duration(seconds: timeStep), (timer) async {
+    timer = Timer.periodic(Duration(seconds: timeStep), (timer) async {
       AppLogger.it.logInfo(timer.tick.toString());
       if (timer.tick % 60 == 0) {
         if (type % 2 == 0) {
@@ -97,6 +125,8 @@ class AdsIntervalController extends FullLifeCycleController
 
       update();
     });
+
+
   }
 
   formattedTime({required int timeInSecond}) {
@@ -106,7 +136,14 @@ class AdsIntervalController extends FullLifeCycleController
     String second = sec.toString().length <= 1 ? "0$sec" : "$sec";
     return "$minute : $second";
   }
+  void stopAutoScroll() {
+    scrollTimer?.cancel(); // Cancel the timer
+    scrollTimer = null; // Nullify the timer
 
+      isScrolling = false;
+      update();
+
+  }
   @override
   void onDetached() {
     // TODO: implement onDetached
@@ -128,7 +165,7 @@ class AdsIntervalController extends FullLifeCycleController
   @override
   void onPaused() {
     // TODO: implement onPaused
-   // timer?.cancel();
+    // timer?.cancel();
   }
 
   @override
@@ -150,6 +187,9 @@ class AdsInterval extends GetView<AdsIntervalController> {
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
           actions: [
+            controller.isScrolling?
+        IconButton(onPressed: () => controller.stopAutoScroll(), icon: const Icon(Icons.public_off_sharp)):
+            IconButton(onPressed: () => controller.startAutoScroll(), icon: Icon(Icons.public)),
             controller.timer?.isActive == true
                 ? IconButton(
                     onPressed: () {
@@ -186,30 +226,38 @@ class AdsInterval extends GetView<AdsIntervalController> {
               },
               icon: const Icon(Icons.exposure_minus_1),
             ),
-            IconButton(onPressed: () {
-              controller.startAdsTimer();
-              controller.update();
-            }, icon: const Icon(Icons.check_circle_outline))
+            IconButton(
+                onPressed: () {
+                  controller.startAdsTimer();
+                  controller.update();
+                },
+                icon: const Icon(Icons.check_circle_outline))
           ],
         ),
         // floatingActionButton: FloatingActionButton(onPressed: controller.startAdsTimer,),
         body: Column(
           children: [
-            controller.loadBannerWidget()??const SizedBox.shrink(),
+            controller.loadBannerWidget() ?? const SizedBox.shrink(),
             Expanded(
               child: ListView.builder(
+                // controller: controller.scrollController,
                 itemCount: controller.loadedSuccessfullyAds.length,
                 itemBuilder: (context, index) {
-
+                  AppLogger.it.logInfo(
+                      "loadedSuccessfullyAds : ${controller.loadedSuccessfullyAds.length}");
                   return Column(
                     children: [
-                      controller.nativeAdWidget(index,useAd: controller.loadedSuccessfullyAds[index]),
-                     SizedBox(
-                       width: Get.width,
-                       height:80,
-                       child:  PlusCardContainer(child: Center(child: Text("Item $index"),),),
-
-                     )
+                      controller.nativeAdWidget(index,
+                          useAd: controller.loadedSuccessfullyAds[index]),
+                      SizedBox(
+                        width: Get.width,
+                        height: 80,
+                        child: PlusCardContainer(
+                          child: Center(
+                            child: Text("Item $index"),
+                          ),
+                        ),
+                      )
                     ],
                   );
                   // if (controller.isAdIndex(index)) {

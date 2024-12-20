@@ -30,7 +30,7 @@ dependencies:
   get:
   logger:
   google_mobile_ads:
-  easy_audience_network:
+#  easy_audience_network: ^0.0.7
   wakelock_plus:
 
 dev_dependencies:

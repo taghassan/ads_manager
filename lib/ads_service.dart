@@ -6,8 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/src/logger.dart';
-import 'package:easy_audience_network/ad/banner_ad.dart' as banner_ad;
-import 'package:easy_audience_network/ad/native_ad.dart' as native_ad;
+// import 'package:easy_audience_network/ad/banner_ad.dart' as banner_ad;
+// import 'package:easy_audience_network/ad/native_ad.dart' as native_ad;
 
 class AdsInitConfig {
   String? _interstitialAdUnitId;
@@ -337,7 +337,7 @@ mixin HasNativeAdsMixin on GetxController {
       receivePort.listen((data) {
         if (data is AdRequest) {
 
-
+AppLogger.it.logInfo("adUnitIds ${adUnitIds?.length}");
           for (String adId in adUnitId) {
             try{
               adsMixinLogger.w("adId = $adId");
@@ -350,7 +350,7 @@ mixin HasNativeAdsMixin on GetxController {
                   update();
                 },
                 onAdFailedToLoad: (p0, error) {
-                  adsMixinLogger.e("p0.adUnitId ${p0.adUnitId}");
+                  adsMixinLogger.e("p0.adUnitId error ${p0.adUnitId}");
                   adsMixinLogger.e("message ${error.message}");
                   adsMixinLogger.e("code ${error.code}");
                   adsMixinLogger.e("domain ${error.domain}");
@@ -435,22 +435,22 @@ class BannerAdWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // return Container();
-    return Container(
-      alignment: const Alignment(0.5, 1),
-      child: banner_ad.BannerAd(
-        placementId: Platform.isAndroid
-            ? placementId
-            : placementIdIos??'',
-        bannerSize: banner_ad.BannerSize.STANDARD,
-        listener: banner_ad.BannerAdListener(
-          onError: (code, message) => AppLogger.it.logError('error $code $message'),
-          onLoaded: () => AppLogger.it.logInfo('loaded'),
-          onClicked: () => AppLogger.it.logInfo('clicked'),
-          onLoggingImpression: () => AppLogger.it.logInfo('logging impression'),
-        ),
-      ),
-    );
+    return Container();
+    // return Container(
+    //   alignment: const Alignment(0.5, 1),
+    //   child: banner_ad.BannerAd(
+    //     placementId: Platform.isAndroid
+    //         ? placementId
+    //         : placementIdIos??'',
+    //     bannerSize: banner_ad.BannerSize.STANDARD,
+    //     listener: banner_ad.BannerAdListener(
+    //       onError: (code, message) => AppLogger.it.logError('error $code $message'),
+    //       onLoaded: () => AppLogger.it.logInfo('loaded'),
+    //       onClicked: () => AppLogger.it.logInfo('clicked'),
+    //       onLoggingImpression: () => AppLogger.it.logInfo('logging impression'),
+    //     ),
+    //   ),
+    // );
   }
 }
 
@@ -462,25 +462,25 @@ class ShowNativeAdWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // return Container();
-    return   native_ad.NativeAd(
-      placementId: placementId,
-      adType: native_ad.NativeAdType.NATIVE_AD,
-      bannerAdSize: native_ad.NativeBannerAdSize.HEIGHT_100,
-      width: double.infinity,
-      backgroundColor: Colors.blue,
-      titleColor: Colors.white,
-      descriptionColor: Colors.white,
-      buttonColor: Colors.deepPurple,
-      buttonTitleColor: Colors.white,
-      buttonBorderColor: Colors.white,
-      listener: native_ad.NativeAdListener(
-        onError: (code, message) => AppLogger.it.logError('error $code $message'),
-        onLoaded: () => AppLogger.it.logInfo('loaded'),
-        onClicked: () => AppLogger.it.logInfo('clicked'),
-        onLoggingImpression: () => AppLogger.it.logInfo('logging impression'),
-        onMediaDownloaded: () => AppLogger.it.logInfo('media downloaded'),
-      ),
-    );
+    return Container();
+    // return   native_ad.NativeAd(
+    //   placementId: placementId,
+    //   adType: native_ad.NativeAdType.NATIVE_AD,
+    //   bannerAdSize: native_ad.NativeBannerAdSize.HEIGHT_100,
+    //   width: double.infinity,
+    //   backgroundColor: Colors.blue,
+    //   titleColor: Colors.white,
+    //   descriptionColor: Colors.white,
+    //   buttonColor: Colors.deepPurple,
+    //   buttonTitleColor: Colors.white,
+    //   buttonBorderColor: Colors.white,
+    //   listener: native_ad.NativeAdListener(
+    //     onError: (code, message) => AppLogger.it.logError('error $code $message'),
+    //     onLoaded: () => AppLogger.it.logInfo('loaded'),
+    //     onClicked: () => AppLogger.it.logInfo('clicked'),
+    //     onLoggingImpression: () => AppLogger.it.logInfo('logging impression'),
+    //     onMediaDownloaded: () => AppLogger.it.logInfo('media downloaded'),
+    //   ),
+    // );
   }
 }
