@@ -14,7 +14,7 @@ migrate_working_dir/
 profile
 
 DerivedData/
-
+.android
 .generated/
 
 *.pbxuser

@@ -53,7 +53,7 @@ AdsInitConfig copyWith({  List<String>? interstitialAdUnitId,
   String? get rewardedAdUnitId => _rewardedAdUnitId?.isNotEmpty==true? ((_rewardedAdUnitId??[])..shuffle(Random())).first :null;
   String? get bannerAdUnitId => _bannerAdUnitId?.isNotEmpty==true? ((_bannerAdUnitId??[])..shuffle(Random())).first :null;
   num? get adInterval => _adInterval;
-  List<String>? get nativeAdUnitIds => _nativeAdUnitIds;
+  List<String>? get nativeAdUnitIds => _nativeAdUnitIds?.isNotEmpty==true? (_nativeAdUnitIds??[]).toSet().toList():[];
 
   @override
   Map<String, dynamic> toJson() {
