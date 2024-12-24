@@ -3,10 +3,12 @@ import 'dart:math';
 
 import 'package:ads_manager/ads_service.dart';
 import 'package:ads_manager/logger_utils.dart';
+import 'package:ads_manager/models/ads_init_config.dart';
 import 'package:ads_manager/native_ads_list.dart';
 import 'package:ads_manager/plus_card_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:github_client/github_client.dart';
 import 'package:logger/logger.dart';
 
 
@@ -37,7 +39,10 @@ class AdsIntervalController extends FullLifeCycleController
   bool isScrolling=false;
   @override
   void onInit() async {
-    initIntervalAds();
+
+   await fetchGithubAds();
+
+   // initIntervalAds();
     change(null, status: RxStatus.success());
 
     super.onInit();
@@ -45,6 +50,7 @@ class AdsIntervalController extends FullLifeCycleController
 
   @override
   void onClose() {
+
     disposeNativeAds();
     disposeRewordAds();
     timer?.cancel();
@@ -91,6 +97,24 @@ class AdsIntervalController extends FullLifeCycleController
   try{
     startAutoScroll();
   }catch(_){}
+  }
+
+  fetchGithubAds()async{
+    try{
+
+      GithubClient client=GithubClient(owner: "taghassan",token: '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');
+
+      var response=await client.fetchGithubData<AdsInitConfig>(model: AdsInitConfig(), pathInRepo: "lib/ads_list.json", repositoryName: "aghanilyrics_package",folder: "ads_list");
+      if(response is AdsInitConfig)
+      {
+        adsInitConfig=response;
+        update();
+       Future.delayed(const Duration(seconds: 1),() =>  initIntervalAds(useManagerNativeAds: true),);
+      }
+
+    }catch(e){
+      AppLogger.it.logError("GithubClient response error $e");
+    }
   }
 
   void startAutoScroll() {
@@ -200,6 +224,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
   Widget build(BuildContext context) {
     return controller.obx(
       (state) => Scaffold(
+        floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
         appBar: AppBar(
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),

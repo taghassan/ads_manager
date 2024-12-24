@@ -6,48 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:logger/src/logger.dart';
-// import 'package:easy_audience_network/ad/banner_ad.dart' as banner_ad;
-// import 'package:easy_audience_network/ad/native_ad.dart' as native_ad;
-
-class AdsInitConfig {
-  String? _interstitialAdUnitId;
-  String? _rewardedAdUnitId;
-  String? _bannerAdUnitId;
-  int? _adInterval;
-  List<String>? _nativeAdUnitIds;
-
-  AdsInitConfig({
-    String? interstitialAdUnitId,
-    String? rewardedAdUnitId,
-    String? bannerAdUnitId,
-    int? adInterval,
-    List<String>? nativeAdUnitIds,
-  })  : _interstitialAdUnitId = interstitialAdUnitId,
-        _rewardedAdUnitId = rewardedAdUnitId,
-        _adInterval = adInterval,
-        _bannerAdUnitId = bannerAdUnitId,
-        _nativeAdUnitIds = nativeAdUnitIds;
-
-  // Getter and Setter for interstitialAdUnitId
-  String? get interstitialAdUnitId => _interstitialAdUnitId;
-  set interstitialAdUnitId(String? id) => _interstitialAdUnitId = id;
-
-  // Getter and Setter for rewardedAdUnitId
-  String? get rewardedAdUnitId => _rewardedAdUnitId;
-  set rewardedAdUnitId(String? id) => _rewardedAdUnitId = id;
-
-  // Getter and Setter for bannerAdUnitId
-  String? get bannerAdUnitId => _bannerAdUnitId;
-  set bannerAdUnitId(String? id) => _bannerAdUnitId = id;
-
-  // Getter and Setter for adInterval
-  int? get adInterval => _adInterval;
-  set setAdInterval(int? interval) => _adInterval = interval;
-
-  // Getter and Setter for nativeAdUnitIds
-  List<String>? get nativeAdUnitIds => _nativeAdUnitIds;
-  set nativeAdUnitIds(List<String>? ids) => _nativeAdUnitIds = ids;
-}
 
 
 class ListNativeAdUnits{
@@ -309,7 +267,7 @@ mixin HasNativeAdsMixin on GetxController {
   List<String> adUnitId = [];
   List<String?> loadedToScreenAdIds = [];
   List<AddModel> loadedSuccessfullyAds = [];
-  int adInterval = 10;
+  num adInterval = 10;
 
   int loadedAdIndex(int index) => ((index / adInterval) - 1).toInt();
 

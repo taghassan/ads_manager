@@ -32,6 +32,8 @@ dependencies:
   google_mobile_ads:
 #  easy_audience_network: ^0.0.7
   wakelock_plus:
+  github_client:
+    git: https://github.com/taghassan/github_client
 
 dev_dependencies:
   flutter_test:
