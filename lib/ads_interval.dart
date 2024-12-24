@@ -1,11 +1,15 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:ads_manager/ads_service.dart';
 import 'package:ads_manager/logger_utils.dart';
+import 'package:ads_manager/native_ads_list.dart';
 import 'package:ads_manager/plus_card_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:logger/logger.dart';
+
+
 
 class AdsIntervalBinding extends Bindings {
   @override
@@ -52,6 +56,9 @@ class AdsIntervalController extends FullLifeCycleController
   }
 
   initIntervalAds() {
+
+
+
     loadInterstitialAdAd(interstitialAdId: adsInitConfig?.interstitialAdUnitId);
 
     loadAdRewarded(
@@ -59,28 +66,38 @@ class AdsIntervalController extends FullLifeCycleController
 
     loadBannerAd(forceUseId: adsInitConfig?.bannerAdUnitId);
 
+    AppLogger.it.logInfo("uniqueAdsList ${uniqueAdsList}");
+    uniqueAdsList.shuffle(Random());
     initAds(
-        adUnitIds: adsInitConfig?.nativeAdUnitIds ??
-            [
-              'ca-app-pub-8107574011529731/1677462684',
-              'ca-app-pub-8107574011529731/3520897512',
-              'ca-app-pub-8107574011529731/9695984706',
-              'ca-app-pub-8107574011529731/9894734170',
-              'ca-app-pub-8107574011529731/3876120737',
-              'ca-app-pub-8107574011529731/6893898838',
-              'ca-app-pub-8107574011529731/1305797714',
-              'ca-app-pub-8107574011529731/7123260860',
-              'ca-app-pub-8107574011529731/3403507702',
-              'ca-app-pub-8107574011529731/6303534606',
-              'ca-app-pub-8107574011529731/5899648847'
-            ]);
+       adUnitIds: uniqueAdsList
+        // adUnitIds: adsInitConfig?.nativeAdUnitIds ??
+        //     [
+        //       'ca-app-pub-8107574011529731/1677462684',
+        //       'ca-app-pub-8107574011529731/3520897512',
+        //       'ca-app-pub-8107574011529731/9695984706',
+        //       'ca-app-pub-8107574011529731/9894734170',
+        //       'ca-app-pub-8107574011529731/3876120737',
+        //       'ca-app-pub-8107574011529731/6893898838',
+        //       'ca-app-pub-8107574011529731/1305797714',
+        //       'ca-app-pub-8107574011529731/7123260860',
+        //       'ca-app-pub-8107574011529731/3403507702',
+        //       'ca-app-pub-8107574011529731/6303534606',
+        //       'ca-app-pub-8107574011529731/5899648847'
+        //     ]
+    );
 
     adInterval = adsInitConfig?.adInterval ?? 1;
+  try{
+    startAutoScroll();
+  }catch(_){}
   }
 
   void startAutoScroll() {
-    if (scrollTimer == null || !scrollTimer!.isActive) {
-      scrollTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
+    isScrolling = true;
+    update();
+    // if (scrollTimer == null || !scrollTimer!.isActive) {
+      scrollTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+        if(isScrolling!=true)return ;
         if (scrollController.hasClients) {
           double maxScroll = scrollController.position.maxScrollExtent;
           double currentScroll = scrollController.offset;
@@ -93,9 +110,8 @@ class AdsIntervalController extends FullLifeCycleController
           }
         }
       });
-      isScrolling = true;
-      update();
-    }
+
+    // }
   }
 
   void startAdsTimer() async {
@@ -240,7 +256,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
             controller.loadBannerWidget() ?? const SizedBox.shrink(),
             Expanded(
               child: ListView.builder(
-                // controller: controller.scrollController,
+                controller: controller.scrollController,
                 itemCount: controller.loadedSuccessfullyAds.length,
                 itemBuilder: (context, index) {
                   AppLogger.it.logInfo(

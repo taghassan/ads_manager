@@ -1,4 +1,5 @@
 import 'package:ads_manager/ads_interval.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
@@ -31,10 +32,21 @@ class MyApp extends StatelessWidget {
   }
 }
 
-initGoogleAdsService({bool? stayAwake}) async {
+initGoogleAdsService({bool? stayAwake,bool? isTestDevice=true}) async {
   WidgetsFlutterBinding.ensureInitialized();
   MobileAds.instance.initialize();
   if (stayAwake == true) {
     WakelockPlus.enable();
+  }
+  if(kDebugMode && isTestDevice==true)
+  {
+    // Initialize the Mobile Ads SDK
+    MobileAds.instance.updateRequestConfiguration(
+      RequestConfiguration(
+        testDeviceIds: ['27ACCEE25984546D8700BEBC3B937FE8'], // Replace with your device ID
+      ),
+    );
+    MobileAds.instance.setAppMuted(false);
+    MobileAds.instance.setAppVolume(1.0);
   }
 }
