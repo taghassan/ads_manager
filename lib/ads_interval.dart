@@ -224,7 +224,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
   Widget build(BuildContext context) {
     return controller.obx(
       (state) => Scaffold(
-        floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
+       // floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
         appBar: AppBar(
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
