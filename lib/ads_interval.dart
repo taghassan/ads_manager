@@ -55,7 +55,7 @@ class AdsIntervalController extends FullLifeCycleController
     super.onClose();
   }
 
-  initIntervalAds() {
+  initIntervalAds({bool?useManagerNativeAds=false}) {
 
 
 
@@ -66,24 +66,25 @@ class AdsIntervalController extends FullLifeCycleController
 
     loadBannerAd(forceUseId: adsInitConfig?.bannerAdUnitId);
 
-    AppLogger.it.logInfo("uniqueAdsList ${uniqueAdsList}");
+    AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
     uniqueAdsList.shuffle(Random());
     initAds(
-       adUnitIds: uniqueAdsList
-        // adUnitIds: adsInitConfig?.nativeAdUnitIds ??
-        //     [
-        //       'ca-app-pub-8107574011529731/1677462684',
-        //       'ca-app-pub-8107574011529731/3520897512',
-        //       'ca-app-pub-8107574011529731/9695984706',
-        //       'ca-app-pub-8107574011529731/9894734170',
-        //       'ca-app-pub-8107574011529731/3876120737',
-        //       'ca-app-pub-8107574011529731/6893898838',
-        //       'ca-app-pub-8107574011529731/1305797714',
-        //       'ca-app-pub-8107574011529731/7123260860',
-        //       'ca-app-pub-8107574011529731/3403507702',
-        //       'ca-app-pub-8107574011529731/6303534606',
-        //       'ca-app-pub-8107574011529731/5899648847'
-        //     ]
+       adUnitIds: useManagerNativeAds ==false? uniqueAdsList:
+       (adsInitConfig?.nativeAdUnitIds ??
+           [
+             'ca-app-pub-8107574011529731/1677462684',
+             'ca-app-pub-8107574011529731/3520897512',
+             'ca-app-pub-8107574011529731/9695984706',
+             'ca-app-pub-8107574011529731/9894734170',
+             'ca-app-pub-8107574011529731/3876120737',
+             'ca-app-pub-8107574011529731/6893898838',
+             'ca-app-pub-8107574011529731/1305797714',
+             'ca-app-pub-8107574011529731/7123260860',
+             'ca-app-pub-8107574011529731/3403507702',
+             'ca-app-pub-8107574011529731/6303534606',
+             'ca-app-pub-8107574011529731/5899648847'
+           ]
+       )
     );
 
     adInterval = adsInitConfig?.adInterval ?? 1;
