@@ -233,17 +233,44 @@ mixin HasBannerAd{
     )..load();
   }
 
-  Widget? loadBannerWidget(){
+  BannerAd createAndLoadBannerAd({String? forceUseId}) {
+   return BannerAd(
+      adUnitId:forceUseId?? bannerAdUnitId,
+      request: const AdRequest(),
+      size: AdSize.banner,
+      listener: BannerAdListener(
+        // Called when an ad is successfully received.
+        onAdLoaded: (ad) {
+          debugPrint('$ad loaded.');
+
+          isLoaded = true;
+
+        },
+        // Called when an ad request failed.
+        onAdFailedToLoad: (ad, err) {
+          debugPrint('BannerAd failed to load: $err');
+          // Dispose the ad here to free resources.
+          ad.dispose();
+        },
+      ),
+    )..load();
+  }
+
+
+  Widget loadBannerWidget({BannerAd? banner }){
     if (bannerAd != null &&
-        isLoaded == true) {
-    return  Padding(
+        isLoaded == true || banner!=null) {
+
+      BannerAd? bannerAdToUse=banner??bannerAd;
+
+    return bannerAdToUse!=null? Padding(
       padding: const EdgeInsets.symmetric(horizontal: 15),
       child: SizedBox(
-        width: bannerAd!.size.width.toDouble(),
-        height: bannerAd!.size.height.toDouble(),
-        child: AdWidget(ad: bannerAd!),
+        width: bannerAdToUse.size.width.toDouble(),
+        height: bannerAdToUse.size.height.toDouble(),
+        child: AdWidget(ad: bannerAdToUse),
       ),
-    );
+    ):const SizedBox.shrink();
     }
     return const SizedBox.shrink();
   }
