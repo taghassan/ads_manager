@@ -239,7 +239,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
           actions: [
 
             IconButton(onPressed: () => Get.defaultDialog(
-              title: "Total ${controller.loadedSuccessfullyAds.length}",
+              title: "Total (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length??0})",
               content:SizedBox(
                 height: Get.height*0.7,
                 width: Get.width ,
@@ -330,7 +330,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
                         height: 80,
                         child: PlusCardContainer(
                           child: Center(
-                            child: Text("Item $index"),
+                            child: Text("Item $index (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length??0})"),
                           ),
                         ),
                       )
