@@ -72,26 +72,7 @@ class AdsIntervalController extends FullLifeCycleController
 
     loadBannerAd(forceUseId: adsInitConfig?.bannerAdUnitId);
 
-    AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
-    uniqueAdsList.shuffle(Random());
-    initAds(
-       adUnitIds: useManagerNativeAds ==false? uniqueAdsList:
-       (adsInitConfig?.nativeAdUnitIds ??
-           [
-             'ca-app-pub-8107574011529731/1677462684',
-             'ca-app-pub-8107574011529731/3520897512',
-             'ca-app-pub-8107574011529731/9695984706',
-             'ca-app-pub-8107574011529731/9894734170',
-             'ca-app-pub-8107574011529731/3876120737',
-             'ca-app-pub-8107574011529731/6893898838',
-             'ca-app-pub-8107574011529731/1305797714',
-             'ca-app-pub-8107574011529731/7123260860',
-             'ca-app-pub-8107574011529731/3403507702',
-             'ca-app-pub-8107574011529731/6303534606',
-             'ca-app-pub-8107574011529731/5899648847'
-           ]
-       )
-    );
+    initInterval(useManagerNativeAds: useManagerNativeAds);
 
     adInterval = adsInitConfig?.adInterval ?? 1;
   try{
@@ -99,6 +80,28 @@ class AdsIntervalController extends FullLifeCycleController
   }catch(_){}
   }
 
+initInterval({bool?useManagerNativeAds=false}){
+  AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
+  uniqueAdsList.shuffle(Random());
+  initAds(
+      adUnitIds: useManagerNativeAds ==false? uniqueAdsList:
+      (adsInitConfig?.nativeAdUnitIds ??
+          [
+            'ca-app-pub-8107574011529731/1677462684',
+            'ca-app-pub-8107574011529731/3520897512',
+            'ca-app-pub-8107574011529731/9695984706',
+            'ca-app-pub-8107574011529731/9894734170',
+            'ca-app-pub-8107574011529731/3876120737',
+            'ca-app-pub-8107574011529731/6893898838',
+            'ca-app-pub-8107574011529731/1305797714',
+            'ca-app-pub-8107574011529731/7123260860',
+            'ca-app-pub-8107574011529731/3403507702',
+            'ca-app-pub-8107574011529731/6303534606',
+            'ca-app-pub-8107574011529731/5899648847'
+          ]
+      )
+  );
+}
   fetchGithubAds()async{
     try{
 
@@ -215,6 +218,11 @@ class AdsIntervalController extends FullLifeCycleController
 
     //startAdsTimer();
   }
+
+ bool isAdLoaded({required String adId}) {
+   return  loadedSuccessfullyAds.firstWhereOrNull((element) => element.adUnitId==adId,)!=null;
+  }
+
 }
 
 class AdsInterval extends GetView<AdsIntervalController> {
@@ -229,9 +237,34 @@ class AdsInterval extends GetView<AdsIntervalController> {
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
           actions: [
+
+            IconButton(onPressed: () => Get.defaultDialog(
+              title: "Total ${controller.loadedSuccessfullyAds.length}",
+              content:SizedBox(
+                height: Get.height*0.7,
+                width: Get.width ,
+                child:  ListView.builder(
+                  itemCount: (controller.adsInitConfig?.nativeAdUnitIds??[]).length,
+                  itemBuilder: (context, index) => Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(15),
+                        decoration:   BoxDecoration(
+                            color: controller.isAdLoaded(adId:controller.adsInitConfig?.nativeAdUnitIds?[index]??'')?Colors.green: Colors.white
+                        ),
+                        child: Text("$index - ${controller.adsInitConfig?.nativeAdUnitIds?[index]??''}",style: TextStyle(
+                            color: controller.isAdLoaded(adId:controller.adsInitConfig?.nativeAdUnitIds?[index]??'')?Colors.white: null
+                        ),),
+                      ),
+                     const Divider(),
+                    ],
+                  ),),
+              )
+            ), icon: const Icon(Icons.list_alt)),
+
             controller.isScrolling?
         IconButton(onPressed: () => controller.stopAutoScroll(), icon: const Icon(Icons.public_off_sharp)):
-            IconButton(onPressed: () => controller.startAutoScroll(), icon: Icon(Icons.public)),
+            IconButton(onPressed: () => controller.startAutoScroll(), icon: const Icon(Icons.public)),
             controller.timer?.isActive == true
                 ? IconButton(
                     onPressed: () {
@@ -289,6 +322,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
                       "loadedSuccessfullyAds : ${controller.loadedSuccessfullyAds.length}");
                   return Column(
                     children: [
+
                       controller.nativeAdWidget(index,
                           useAd: controller.loadedSuccessfullyAds[index]),
                       SizedBox(
