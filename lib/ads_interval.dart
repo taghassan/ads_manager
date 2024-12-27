@@ -8,10 +8,10 @@ import 'package:ads_manager/native_ads_list.dart';
 import 'package:ads_manager/plus_card_container.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:github_client/base_data_model.dart';
 import 'package:github_client/github_client.dart';
 import 'package:logger/logger.dart';
-
-
+import 'package:package_info_plus/package_info_plus.dart';
 
 class AdsIntervalBinding extends Bindings {
   @override
@@ -32,17 +32,22 @@ class AdsIntervalController extends FullLifeCycleController
   int timeStep = 2;
   int type = 0;
 
+  PackageInfo? packageInfo;
+
   AdsInitConfig? adsInitConfig;
 
   final ScrollController scrollController = ScrollController();
   Timer? scrollTimer;
-  bool isScrolling=false;
+  bool isScrolling = false;
   @override
   void onInit() async {
+    packageInfo = await PackageInfo.fromPlatform();
+    AppLogger.it.logInfo("packageInfo appName ${packageInfo?.appName}");
+    update();
 
-   await fetchGithubAds();
+    await fetchGithubAds();
 
-   // initIntervalAds();
+    // initIntervalAds();
     change(null, status: RxStatus.success());
 
     super.onInit();
@@ -50,7 +55,6 @@ class AdsIntervalController extends FullLifeCycleController
 
   @override
   void onClose() {
-
     disposeNativeAds();
     disposeRewordAds();
     timer?.cancel();
@@ -61,10 +65,7 @@ class AdsIntervalController extends FullLifeCycleController
     super.onClose();
   }
 
-  initIntervalAds({bool?useManagerNativeAds=false}) {
-
-
-
+  initIntervalAds({bool? useManagerNativeAds = false}) {
     loadInterstitialAdAd(interstitialAdId: adsInitConfig?.interstitialAdUnitId);
 
     loadAdRewarded(
@@ -75,47 +76,63 @@ class AdsIntervalController extends FullLifeCycleController
     initInterval(useManagerNativeAds: useManagerNativeAds);
 
     adInterval = adsInitConfig?.adInterval ?? 1;
-  try{
-    startAutoScroll();
-  }catch(_){}
+    try {
+      startAutoScroll();
+    } catch (_) {}
   }
 
-initInterval({bool?useManagerNativeAds=false}){
-  AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
-  uniqueAdsList.shuffle(Random());
-  initAds(
-      adUnitIds: useManagerNativeAds ==false? uniqueAdsList:
-      (adsInitConfig?.nativeAdUnitIds ??
-          [
-            'ca-app-pub-8107574011529731/1677462684',
-            'ca-app-pub-8107574011529731/3520897512',
-            'ca-app-pub-8107574011529731/9695984706',
-            'ca-app-pub-8107574011529731/9894734170',
-            'ca-app-pub-8107574011529731/3876120737',
-            'ca-app-pub-8107574011529731/6893898838',
-            'ca-app-pub-8107574011529731/1305797714',
-            'ca-app-pub-8107574011529731/7123260860',
-            'ca-app-pub-8107574011529731/3403507702',
-            'ca-app-pub-8107574011529731/6303534606',
-            'ca-app-pub-8107574011529731/5899648847'
-          ]
-      )
-  );
-}
-  fetchGithubAds()async{
-    try{
+  initInterval({bool? useManagerNativeAds = false}) {
+    AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
+    uniqueAdsList.shuffle(Random());
+    initAds(
+        adUnitIds: useManagerNativeAds == false
+            ? uniqueAdsList
+            : (adsInitConfig?.nativeAdUnitIds ??
+                [
+                  'ca-app-pub-8107574011529731/1677462684',
+                  'ca-app-pub-8107574011529731/3520897512',
+                  'ca-app-pub-8107574011529731/9695984706',
+                  'ca-app-pub-8107574011529731/9894734170',
+                  'ca-app-pub-8107574011529731/3876120737',
+                  'ca-app-pub-8107574011529731/6893898838',
+                  'ca-app-pub-8107574011529731/1305797714',
+                  'ca-app-pub-8107574011529731/7123260860',
+                  'ca-app-pub-8107574011529731/3403507702',
+                  'ca-app-pub-8107574011529731/6303534606',
+                  'ca-app-pub-8107574011529731/5899648847'
+                ]));
+  }
 
-      GithubClient client=GithubClient(owner: "taghassan",token: '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');
+  fetchGithubAds() async {
+    try {
+      GithubClient client = GithubClient(
+          owner: "taghassan",
+          token: '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');
 
-      var response=await client.fetchGithubData<AdsInitConfig>(model: AdsInitConfig(), pathInRepo: "lib/ads_list.json", repositoryName: "aghanilyrics_package",folder: "ads_list");
-      if(response is AdsInitConfig)
-      {
-        adsInitConfig=response;
-        update();
-       Future.delayed(const Duration(seconds: 1),() =>  initIntervalAds(useManagerNativeAds: true),);
+      late BaseDataModel? response;
+      if (packageInfo != null) {
+        response = await client.fetchGithubData<AdsInitConfig>(
+            model: AdsInitConfig(),
+            pathInRepo: "apps/${packageInfo?.appName}.json",
+            repositoryName: "ads_keys",
+            folder: "ads_list");
+      } else {
+        response = await client.fetchGithubData<AdsInitConfig>(
+            model: AdsInitConfig(),
+            pathInRepo: "lib/ads_list.json",
+            repositoryName: "aghanilyrics_package",
+            folder: "ads_list");
       }
 
-    }catch(e){
+      if (response is AdsInitConfig) {
+        adsInitConfig = response;
+        update();
+        Future.delayed(
+          const Duration(seconds: 1),
+          () => initIntervalAds(useManagerNativeAds: true),
+        );
+      }
+    } catch (e) {
       AppLogger.it.logError("GithubClient response error $e");
     }
   }
@@ -124,20 +141,20 @@ initInterval({bool?useManagerNativeAds=false}){
     isScrolling = true;
     update();
     // if (scrollTimer == null || !scrollTimer!.isActive) {
-      scrollTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
-        if(isScrolling!=true)return ;
-        if (scrollController.hasClients) {
-          double maxScroll = scrollController.position.maxScrollExtent;
-          double currentScroll = scrollController.offset;
-          double delta = 2.0; // Adjust this value for scroll speed
+    scrollTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
+      if (isScrolling != true) return;
+      if (scrollController.hasClients) {
+        double maxScroll = scrollController.position.maxScrollExtent;
+        double currentScroll = scrollController.offset;
+        double delta = 2.0; // Adjust this value for scroll speed
 
-          if (currentScroll + delta >= maxScroll) {
-            scrollController.jumpTo(0); // Reset to the top
-          } else {
-            scrollController.jumpTo(currentScroll + delta);
-          }
+        if (currentScroll + delta >= maxScroll) {
+          scrollController.jumpTo(0); // Reset to the top
+        } else {
+          scrollController.jumpTo(currentScroll + delta);
         }
-      });
+      }
+    });
 
     // }
   }
@@ -169,8 +186,6 @@ initInterval({bool?useManagerNativeAds=false}){
 
       update();
     });
-
-
   }
 
   formattedTime({required int timeInSecond}) {
@@ -180,14 +195,15 @@ initInterval({bool?useManagerNativeAds=false}){
     String second = sec.toString().length <= 1 ? "0$sec" : "$sec";
     return "$minute : $second";
   }
+
   void stopAutoScroll() {
     scrollTimer?.cancel(); // Cancel the timer
     scrollTimer = null; // Nullify the timer
 
-      isScrolling = false;
-      update();
-
+    isScrolling = false;
+    update();
   }
+
   @override
   void onDetached() {
     // TODO: implement onDetached
@@ -219,10 +235,12 @@ initInterval({bool?useManagerNativeAds=false}){
     //startAdsTimer();
   }
 
- bool isAdLoaded({required String adId}) {
-   return  loadedSuccessfullyAds.firstWhereOrNull((element) => element.adUnitId==adId,)!=null;
+  bool isAdLoaded({required String adId}) {
+    return loadedSuccessfullyAds.firstWhereOrNull(
+          (element) => element.adUnitId == adId,
+        ) !=
+        null;
   }
-
 }
 
 class AdsInterval extends GetView<AdsIntervalController> {
@@ -232,39 +250,57 @@ class AdsInterval extends GetView<AdsIntervalController> {
   Widget build(BuildContext context) {
     return controller.obx(
       (state) => Scaffold(
-       // floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
+        // floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
         appBar: AppBar(
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
           actions: [
-
-            IconButton(onPressed: () => Get.defaultDialog(
-              title: "Total (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length??0})",
-              content:SizedBox(
-                height: Get.height*0.7,
-                width: Get.width ,
-                child:  ListView.builder(
-                  itemCount: (controller.adsInitConfig?.nativeAdUnitIds??[]).length,
-                  itemBuilder: (context, index) => Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(15),
-                        decoration:   BoxDecoration(
-                            color: controller.isAdLoaded(adId:controller.adsInitConfig?.nativeAdUnitIds?[index]??'')?Colors.green: Colors.white
+            IconButton(
+                onPressed: () => Get.defaultDialog(
+                    title:
+                        "Total (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})",
+                    content: SizedBox(
+                      height: Get.height * 0.7,
+                      width: Get.width,
+                      child: ListView.builder(
+                        itemCount:
+                            (controller.adsInitConfig?.nativeAdUnitIds ?? [])
+                                .length,
+                        itemBuilder: (context, index) => Column(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(15),
+                              decoration: BoxDecoration(
+                                  color: controller.isAdLoaded(
+                                          adId: controller.adsInitConfig
+                                                  ?.nativeAdUnitIds?[index] ??
+                                              '')
+                                      ? Colors.green
+                                      : Colors.white),
+                              child: Text(
+                                "$index - ${controller.adsInitConfig?.nativeAdUnitIds?[index] ?? ''}",
+                                style: TextStyle(
+                                    color: controller.isAdLoaded(
+                                            adId: controller.adsInitConfig
+                                                    ?.nativeAdUnitIds?[index] ??
+                                                '')
+                                        ? Colors.white
+                                        : null),
+                              ),
+                            ),
+                            const Divider(),
+                          ],
                         ),
-                        child: Text("$index - ${controller.adsInitConfig?.nativeAdUnitIds?[index]??''}",style: TextStyle(
-                            color: controller.isAdLoaded(adId:controller.adsInitConfig?.nativeAdUnitIds?[index]??'')?Colors.white: null
-                        ),),
                       ),
-                     const Divider(),
-                    ],
-                  ),),
-              )
-            ), icon: const Icon(Icons.list_alt)),
-
-            controller.isScrolling?
-        IconButton(onPressed: () => controller.stopAutoScroll(), icon: const Icon(Icons.public_off_sharp)):
-            IconButton(onPressed: () => controller.startAutoScroll(), icon: const Icon(Icons.public)),
+                    )),
+                icon: const Icon(Icons.list_alt)),
+            controller.isScrolling
+                ? IconButton(
+                    onPressed: () => controller.stopAutoScroll(),
+                    icon: const Icon(Icons.public_off_sharp))
+                : IconButton(
+                    onPressed: () => controller.startAutoScroll(),
+                    icon: const Icon(Icons.public)),
             controller.timer?.isActive == true
                 ? IconButton(
                     onPressed: () {
@@ -322,7 +358,6 @@ class AdsInterval extends GetView<AdsIntervalController> {
                       "loadedSuccessfullyAds : ${controller.loadedSuccessfullyAds.length}");
                   return Column(
                     children: [
-
                       controller.nativeAdWidget(index,
                           useAd: controller.loadedSuccessfullyAds[index]),
                       SizedBox(
@@ -330,7 +365,8 @@ class AdsInterval extends GetView<AdsIntervalController> {
                         height: 80,
                         child: PlusCardContainer(
                           child: Center(
-                            child: Text("Item $index (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length??0})"),
+                            child: Text(
+                                "Item $index (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})"),
                           ),
                         ),
                       )

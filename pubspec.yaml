@@ -34,6 +34,7 @@ dependencies:
   wakelock_plus:
   github_client:
     git: https://github.com/taghassan/github_client
+  package_info_plus:
 
 dev_dependencies:
   flutter_test:
