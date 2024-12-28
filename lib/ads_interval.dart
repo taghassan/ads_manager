@@ -65,46 +65,51 @@ class AdsIntervalController extends FullLifeCycleController
     super.onClose();
   }
 
-  initIntervalAds({bool? useManagerNativeAds = false}) {
-    loadInterstitialAdAd(interstitialAdId: adsInitConfig?.interstitialAdUnitId);
+  initIntervalAds({bool? useManagerNativeAds = false, AdsInitConfig? adsConfig}) {
+    loadInterstitialAdAd(interstitialAdId: adsConfig?.interstitialAdUnitId);
 
     loadAdRewarded(
-        logger: Logger(), forceUseId: adsInitConfig?.rewardedAdUnitId);
+        logger: Logger(), forceUseId: adsConfig?.rewardedAdUnitId);
 
-    loadBannerAd(forceUseId: adsInitConfig?.bannerAdUnitId);
+    loadBannerAd(forceUseId: adsConfig?.bannerAdUnitId);
 
-    initInterval(useManagerNativeAds: useManagerNativeAds);
+    if(adsConfig?.nativeAdUnitIds!=null){
+      initAds(adUnitIds: adsConfig?.nativeAdUnitIds);
+    }
 
-    adInterval = adsInitConfig?.adInterval ?? 1;
+    adInterval = adsConfig?.adInterval ?? 1;
     try {
       startAutoScroll();
     } catch (_) {}
   }
 
   initInterval({bool? useManagerNativeAds = false}) {
-    AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
-    uniqueAdsList.shuffle(Random());
-    initAds(
-        adUnitIds: useManagerNativeAds == false
-            ? uniqueAdsList
-            : (adsInitConfig?.nativeAdUnitIds ??
-                [
-                  'ca-app-pub-8107574011529731/1677462684',
-                  'ca-app-pub-8107574011529731/3520897512',
-                  'ca-app-pub-8107574011529731/9695984706',
-                  'ca-app-pub-8107574011529731/9894734170',
-                  'ca-app-pub-8107574011529731/3876120737',
-                  'ca-app-pub-8107574011529731/6893898838',
-                  'ca-app-pub-8107574011529731/1305797714',
-                  'ca-app-pub-8107574011529731/7123260860',
-                  'ca-app-pub-8107574011529731/3403507702',
-                  'ca-app-pub-8107574011529731/6303534606',
-                  'ca-app-pub-8107574011529731/5899648847'
-                ]));
+    // AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
+    // uniqueAdsList.shuffle(Random());
+    // initAds(
+    //     adUnitIds: useManagerNativeAds == false
+    //         ? uniqueAdsList
+    //         : (adsInitConfig?.nativeAdUnitIds ??
+    //             [
+    //               'ca-app-pub-8107574011529731/1677462684',
+    //               'ca-app-pub-8107574011529731/3520897512',
+    //               'ca-app-pub-8107574011529731/9695984706',
+    //               'ca-app-pub-8107574011529731/9894734170',
+    //               'ca-app-pub-8107574011529731/3876120737',
+    //               'ca-app-pub-8107574011529731/6893898838',
+    //               'ca-app-pub-8107574011529731/1305797714',
+    //               'ca-app-pub-8107574011529731/7123260860',
+    //               'ca-app-pub-8107574011529731/3403507702',
+    //               'ca-app-pub-8107574011529731/6303534606',
+    //               'ca-app-pub-8107574011529731/5899648847'
+    //             ]));
+
   }
 
-  fetchGithubAds() async {
+    fetchGithubAds() async {
     try {
+      packageInfo = await PackageInfo.fromPlatform();
+      update();
       GithubClient client = GithubClient(
           owner: "taghassan",
           token: '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');
@@ -113,7 +118,7 @@ class AdsIntervalController extends FullLifeCycleController
       if (packageInfo != null) {
         response = await client.fetchGithubData<AdsInitConfig>(
             model: AdsInitConfig(),
-            pathInRepo: "apps/${packageInfo?.appName}.json",
+            pathInRepo: "apps/${packageInfo?.appName.replaceAll(" ", "_")}.json",
             repositoryName: "ads_keys",
             folder: "ads_list");
       } else {
@@ -127,9 +132,13 @@ class AdsIntervalController extends FullLifeCycleController
       if (response is AdsInitConfig) {
         adsInitConfig = response;
         update();
+        AppLogger.it.logDeveloper("adsInitConfig : ${adsInitConfig?.toJson()}");
+        AppLogger.it.logInfo("adsInitConfig nativeAdUnitIds: ${adsInitConfig?.nativeAdUnitIds?.length}");
+
+        update();
         Future.delayed(
           const Duration(seconds: 1),
-          () => initIntervalAds(useManagerNativeAds: true),
+          () => initIntervalAds(useManagerNativeAds: true,adsConfig:adsInitConfig),
         );
       }
     } catch (e) {
@@ -252,6 +261,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
       (state) => Scaffold(
         // floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
         appBar: AppBar(
+           backgroundColor: Colors.white,
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
           actions: [

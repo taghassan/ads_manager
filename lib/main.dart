@@ -11,6 +11,16 @@ export 'ad_helper.dart';
 export 'logger_utils.dart';
 export 'package:ads_manager/main.dart';
 
+openAdsPage({bool? stayAwake,bool? isTestDevice=true})async{
+  await initGoogleAdsService(stayAwake: stayAwake,isTestDevice: isTestDevice);
+  if(!Get.isRegistered<AdsIntervalController>()){
+    Get.lazyPut(() => AdsIntervalController(),);
+  }
+  Get.find<AdsIntervalController>().fetchGithubAds();
+  Get.to(() => const AdsInterval());
+
+}
+
 void main()async {
   await initGoogleAdsService(stayAwake: true);
   runApp(const MyApp());
