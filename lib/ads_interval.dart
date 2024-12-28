@@ -261,7 +261,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
       (state) => Scaffold(
         // floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
         appBar: AppBar(
-           backgroundColor: Colors.white,
+           backgroundColor: Colors.grey,
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
           actions: [
