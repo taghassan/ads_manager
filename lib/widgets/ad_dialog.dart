@@ -16,7 +16,7 @@ class AdDialog extends StatefulWidget {
 }
 
 class AdDialogState extends State<AdDialog> {
-  final CountdownTimer _countdownTimer = CountdownTimer(10);
+  final CountdownTimer _countdownTimer = CountdownTimer(5);
 
   @override
   void initState() {

@@ -568,7 +568,7 @@ mixin RewardedInterstitialAdMixin {
   bool _isAdLoaded = false;
 
   /// Loads a rewarded interstitial ad with the given [adUnitId].
-  void loadRewardedInterstitialAd(String adUnitId) {
+  void loadRewardedInterstitialAd({required String adUnitId}) {
     RewardedInterstitialAd.load(
       adUnitId: adUnitId,
       request: const AdRequest(),

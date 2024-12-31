@@ -46,6 +46,23 @@ class AdsIntervalController extends FullLifeCycleController
 
   AppLifecycleState appLifecycleState = AppLifecycleState.resumed;
 
+  String get getNextAdType {
+    String nextType = "R";
+    switch (type % 3) {
+      case 0:
+        nextType = "R";
+        break;
+      case 1:
+        nextType = "R-I";
+
+        break;
+      case 2:
+        nextType = "I";
+        break;
+    }
+    return nextType;
+  }
+
   @override
   void onInit() async {
     packageInfo = await PackageInfo.fromPlatform();
@@ -114,6 +131,11 @@ class AdsIntervalController extends FullLifeCycleController
     }
 
     adInterval = adsConfig?.adInterval ?? 1;
+
+    if (adsConfig != null && adsConfig.rewardedInterstitialAdUnitId != null) {
+      loadRewardedInterstitialAd(
+          adUnitId: adsConfig.rewardedInterstitialAdUnitId!);
+    }
 
     openAppAdsInitAndLifeCycleStateListen(adsId: adsConfig?.openAppAdUnitId);
 
@@ -236,15 +258,47 @@ class AdsIntervalController extends FullLifeCycleController
   }
 
   showFullScreenAd() async {
-    if (type % 2 == 0) {
-      await showRewardedAd(
-        onUserEarnedReward: (p0, p1) {
+    AppLogger.it.logInfo("type % 3 : ${type % 3}");
+    switch (type % 3) {
+      case 0:
+        try {
+          await showRewardedAd(
+            onUserEarnedReward: (p0, p1) {
+              loadAdRewarded(logger: Logger());
+            },
+          );
+        } catch (e) {
           loadAdRewarded(logger: Logger());
-        },
-      );
-    } else {
-      await interstitialAd?.show();
-      loadInterstitialAdAd();
+        }
+        break;
+      case 1:
+        try {
+          showRewardedInterstitialAd(
+            onAdRewarded: () {
+              if (adsInitConfig != null &&
+                  adsInitConfig?.rewardedInterstitialAdUnitId != null) {
+                loadRewardedInterstitialAd(
+                    adUnitId: adsInitConfig!.rewardedInterstitialAdUnitId!);
+              }
+            },
+          );
+        } catch (e) {
+          if (adsInitConfig != null &&
+              adsInitConfig?.rewardedInterstitialAdUnitId != null) {
+            loadRewardedInterstitialAd(
+                adUnitId: adsInitConfig!.rewardedInterstitialAdUnitId!);
+          }
+        }
+
+        break;
+      case 2:
+        try {
+          await interstitialAd?.show();
+          loadInterstitialAdAd();
+        } catch (e) {
+          loadInterstitialAdAd();
+        }
+        break;
     }
 
     type++;
@@ -430,7 +484,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
                       controller.update();
                     },
                     icon: const Icon(Icons.play_arrow_outlined)),
-            Text(controller.type % 2 == 0 ? " R " : " I ")
+            Text(controller.getNextAdType)
           ],
         ),
         bottomNavigationBar: Row(
