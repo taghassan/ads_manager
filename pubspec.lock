@@ -2,7 +2,7 @@
 # See https://dart.dev/tools/pub/glossary#lockfile
 packages:
   app_logger:
-    dependency: transitive
+    dependency: "direct main"
     description:
       path: "."
       ref: HEAD

@@ -1,11 +1,9 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:ads_manager/ads_service.dart';
-import 'package:ads_manager/logger_utils.dart';
+import 'package:ads_manager/consent_manager.dart';
 import 'package:ads_manager/models/ads_init_config.dart';
-import 'package:ads_manager/native_ads_list.dart';
-import 'package:ads_manager/plus_card_container.dart';
+import 'package:app_logger/app_logger.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:github_client/base_data_model.dart';
@@ -27,7 +25,8 @@ class AdsIntervalController extends FullLifeCycleController
         HasNativeAdsMixin,
         InterstitialAdState,
         HasRewardedAdsMixin,
-        HasBannerAd {
+        HasBannerAd,
+        AppOpenAdManager {
   Timer? timer;
   int timeStep = 2;
   int type = 0;
@@ -39,13 +38,26 @@ class AdsIntervalController extends FullLifeCycleController
   final ScrollController scrollController = ScrollController();
   Timer? scrollTimer;
   bool isScrolling = false;
+
+  var _isMobileAdsInitializeCalled = false;
+  var _isPrivacyOptionsRequired = false;
+
   @override
   void onInit() async {
     packageInfo = await PackageInfo.fromPlatform();
     AppLogger.it.logInfo("packageInfo appName ${packageInfo?.appName}");
     update();
 
+    await openAppAdsInitAndLifeCycleStateListen();
+
     await fetchGithubAds();
+
+    Future.delayed(
+      const Duration(seconds: 2),
+      () {
+        showAdIfAvailable();
+      },
+    );
 
     // initIntervalAds();
     change(null, status: RxStatus.success());
@@ -65,15 +77,57 @@ class AdsIntervalController extends FullLifeCycleController
     super.onClose();
   }
 
-  initIntervalAds({bool? useManagerNativeAds = false, AdsInitConfig? adsConfig}) {
+  openAppAdsInitAndLifeCycleStateListen() async {
+    ConsentManager.instance.gatherConsent((consentGatheringError) {
+      if (consentGatheringError != null) {
+        // Consent not obtained in current session.
+        AppLogger.it.logError(
+            "${consentGatheringError.errorCode}: ${consentGatheringError.message}");
+      }
+
+      // Check if a privacy options entry point is required.
+      _getIsPrivacyOptionsRequired();
+
+      // Attempt to initialize the Mobile Ads SDK.
+      _initializeMobileAdsSDK();
+    });
+
+    // This sample attempts to load ads using consent obtained in the previous session.
+    _initializeMobileAdsSDK();
+  }
+
+  /// Redraw the app bar actions if a privacy options entry point is required.
+  void _getIsPrivacyOptionsRequired() async {
+    if (await ConsentManager.instance.isPrivacyOptionsRequired()) {
+      _isPrivacyOptionsRequired = true;
+      update();
+    }
+  }
+
+  /// Initialize the Mobile Ads SDK if the SDK has gathered consent aligned with
+  /// the app's configured messages.
+  void _initializeMobileAdsSDK() async {
+    if (_isMobileAdsInitializeCalled) {
+      return;
+    }
+
+    if (await ConsentManager.instance.canRequestAds()) {
+      _isMobileAdsInitializeCalled = true;
+
+      // Load an ad.
+      appOpenLoadAd();
+    }
+  }
+
+  initIntervalAds(
+      {bool? useManagerNativeAds = false, AdsInitConfig? adsConfig}) {
     loadInterstitialAdAd(interstitialAdId: adsConfig?.interstitialAdUnitId);
 
-    loadAdRewarded(
-        logger: Logger(), forceUseId: adsConfig?.rewardedAdUnitId);
+    loadAdRewarded(logger: Logger(), forceUseId: adsConfig?.rewardedAdUnitId);
 
     loadBannerAd(forceUseId: adsConfig?.bannerAdUnitId);
 
-    if(adsConfig?.nativeAdUnitIds!=null){
+    if (adsConfig?.nativeAdUnitIds != null) {
       initAds(adUnitIds: adsConfig?.nativeAdUnitIds);
     }
 
@@ -103,10 +157,9 @@ class AdsIntervalController extends FullLifeCycleController
     //               'ca-app-pub-8107574011529731/6303534606',
     //               'ca-app-pub-8107574011529731/5899648847'
     //             ]));
-
   }
 
-    fetchGithubAds() async {
+  fetchGithubAds() async {
     try {
       packageInfo = await PackageInfo.fromPlatform();
       update();
@@ -118,7 +171,8 @@ class AdsIntervalController extends FullLifeCycleController
       if (packageInfo != null) {
         response = await client.fetchGithubData<AdsInitConfig>(
             model: AdsInitConfig(),
-            pathInRepo: "apps/${packageInfo?.appName.replaceAll(" ", "_")}.json",
+            pathInRepo:
+                "apps/${packageInfo?.appName.replaceAll(" ", "_")}.json",
             repositoryName: "ads_keys",
             folder: "ads_list");
       } else {
@@ -133,12 +187,14 @@ class AdsIntervalController extends FullLifeCycleController
         adsInitConfig = response;
         update();
         AppLogger.it.logDeveloper("adsInitConfig : ${adsInitConfig?.toJson()}");
-        AppLogger.it.logInfo("adsInitConfig nativeAdUnitIds: ${adsInitConfig?.nativeAdUnitIds?.length}");
+        AppLogger.it.logInfo(
+            "adsInitConfig nativeAdUnitIds: ${adsInitConfig?.nativeAdUnitIds?.length}");
 
         update();
         Future.delayed(
           const Duration(seconds: 1),
-          () => initIntervalAds(useManagerNativeAds: true,adsConfig:adsInitConfig),
+          () => initIntervalAds(
+              useManagerNativeAds: true, adsConfig: adsInitConfig),
         );
       }
     } catch (e) {
@@ -240,7 +296,7 @@ class AdsIntervalController extends FullLifeCycleController
   @override
   void onResumed() {
     // TODO: implement onResumed
-
+    showAdIfAvailable();
     //startAdsTimer();
   }
 
@@ -261,7 +317,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
       (state) => Scaffold(
         // floatingActionButton: FloatingActionButton(onPressed: controller.fetchGithubAds),
         appBar: AppBar(
-           backgroundColor: Colors.grey,
+          backgroundColor: Colors.grey,
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
           actions: [
@@ -373,7 +429,8 @@ class AdsInterval extends GetView<AdsIntervalController> {
                       SizedBox(
                         width: Get.width,
                         height: 80,
-                        child: PlusCardContainer(
+                        child: Card(
+                          margin: const EdgeInsets.all(10),
                           child: Center(
                             child: Text(
                                 "Item $index (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})"),
@@ -382,6 +439,7 @@ class AdsInterval extends GetView<AdsIntervalController> {
                       )
                     ],
                   );
+
                   // if (controller.isAdIndex(index)) {
                   //   return controller.nativeAdWidget(index);
                   // }

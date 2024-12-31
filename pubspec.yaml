@@ -35,6 +35,8 @@ dependencies:
   github_client:
     git: https://github.com/taghassan/github_client
   package_info_plus:
+  app_logger:
+    git: https://github.com/taghassan/app_logger
 
 dev_dependencies:
   flutter_test:
