@@ -12,6 +12,7 @@ class ListNativeAdUnits {
   //='ca-app-pub-8107574011529731/1677462684'
   ListNativeAdUnits(
       {required this.adUnitId, this.onAdLoaded, this.onAdFailedToLoad});
+
   NativeAd? nativeAd;
   final String adUnitId;
   final void Function(Ad, NativeAd?)? onAdLoaded;
@@ -272,8 +273,10 @@ class AddModel {
   final String? adUnitId;
   final Ad? adUnit;
   final NativeAd? nativeAd;
+  final int? code;
+  final LoadAdError? error;
 
-  AddModel({this.adUnitId, this.adUnit, this.nativeAd});
+  AddModel({this.adUnitId, this.adUnit, this.nativeAd, this.code, this.error});
 }
 
 mixin HasNativeAdsMixin on GetxController {
@@ -281,6 +284,7 @@ mixin HasNativeAdsMixin on GetxController {
   List<String> adUnitId = [];
   List<String?> loadedToScreenAdIds = [];
   List<AddModel> loadedSuccessfullyAds = [];
+  List<AddModel> failedToLoadAds = [];
   num adInterval = 10;
 
   int loadedAdIndex(int index) => ((index / adInterval) - 1).toInt();
@@ -315,9 +319,25 @@ mixin HasNativeAdsMixin on GetxController {
                   adsMixinLogger.w("p0.adUnitId ${p0.adUnitId}");
                   loadedSuccessfullyAds.add(AddModel(
                       adUnitId: p0.adUnitId, adUnit: p0, nativeAd: p1));
+
+                  //***************** created by TajEldeen *****************//
+                  // remove loaded ads from failed ads
+                  //********************************************************//
+                  failedToLoadAds.removeWhere(
+                    (element) => element.adUnitId == p0.adUnitId,
+                  );
+
                   update();
                 },
                 onAdFailedToLoad: (p0, error) {
+                  failedToLoadAds.add(
+                    AddModel(
+                        adUnitId: p0.adUnitId,
+                        adUnit: p0,
+                        code: error.code,
+                        error: error),
+                  );
+
                   adsMixinLogger.e("p0.adUnitId error ${p0.adUnitId}");
                   adsMixinLogger.e("message ${error.message}");
                   adsMixinLogger.e("code ${error.code}");
@@ -396,6 +416,7 @@ mixin HasNativeAdsMixin on GetxController {
 class BannerAdWidget extends StatelessWidget {
   final String placementId;
   final String? placementIdIos;
+
   const BannerAdWidget(
       {super.key, required this.placementId, this.placementIdIos});
 
@@ -423,6 +444,7 @@ class BannerAdWidget extends StatelessWidget {
 class ShowNativeAdWidget extends StatelessWidget {
   final String placementId;
   final String? placementIdIos;
+
   const ShowNativeAdWidget(
       {super.key, required this.placementId, this.placementIdIos});
 
@@ -466,7 +488,7 @@ mixin AppOpenAdManager {
   bool _isShowingAd = false;
 
   /// Load an [AppOpenAd].
-  void appOpenLoadAd() async {
+  void appOpenLoadAd({String? adUnitId}) async {
     // Only load an ad if the Mobile Ads SDK has gathered consent aligned with
     // the app's configured messages.
     var canRequestAds = await ConsentManager.instance.canRequestAds();
@@ -475,7 +497,7 @@ mixin AppOpenAdManager {
     }
 
     AppOpenAd.load(
-      adUnitId: appOpenAdUnitId,
+      adUnitId: adUnitId ?? appOpenAdUnitId,
       request: const AdRequest(),
       adLoadCallback: AppOpenAdLoadCallback(
         onAdLoaded: (ad) {
@@ -538,5 +560,70 @@ mixin AppOpenAdManager {
       },
     );
     _appOpenAd!.show();
+  }
+}
+
+mixin RewardedInterstitialAdMixin {
+  RewardedInterstitialAd? _rewardedInterstitialAd;
+  bool _isAdLoaded = false;
+
+  /// Loads a rewarded interstitial ad with the given [adUnitId].
+  void loadRewardedInterstitialAd(String adUnitId) {
+    RewardedInterstitialAd.load(
+      adUnitId: adUnitId,
+      request: const AdRequest(),
+      rewardedInterstitialAdLoadCallback: RewardedInterstitialAdLoadCallback(
+        onAdLoaded: (RewardedInterstitialAd ad) {
+          _rewardedInterstitialAd = ad;
+          _isAdLoaded = true;
+          _rewardedInterstitialAd?.fullScreenContentCallback =
+              FullScreenContentCallback(
+            onAdDismissedFullScreenContent: (RewardedInterstitialAd ad) {
+              ad.dispose();
+              _rewardedInterstitialAd = null;
+              _isAdLoaded = false;
+              debugPrint('Ad dismissed.');
+            },
+            onAdFailedToShowFullScreenContent:
+                (RewardedInterstitialAd ad, AdError error) {
+              ad.dispose();
+              _rewardedInterstitialAd = null;
+              _isAdLoaded = false;
+              debugPrint('Ad failed to show: $error');
+            },
+          );
+          debugPrint('Ad loaded successfully.');
+        },
+        onAdFailedToLoad: (LoadAdError error) {
+          debugPrint('Failed to load ad: $error');
+          _isAdLoaded = false;
+        },
+      ),
+    );
+  }
+
+  /// Checks if the rewarded interstitial ad is loaded.
+  bool isRewardedInterstitialAdLoaded() => _isAdLoaded;
+
+  /// Shows the rewarded interstitial ad if it's loaded.
+  void showRewardedInterstitialAd({required VoidCallback onAdRewarded}) {
+    if (_rewardedInterstitialAd == null) {
+      debugPrint('Ad is not loaded yet.');
+      return;
+    }
+
+    _rewardedInterstitialAd?.show(
+        onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
+      debugPrint('User earned reward: ${reward.amount} ${reward.type}');
+      onAdRewarded();
+    });
+    _rewardedInterstitialAd = null;
+    _isAdLoaded = false;
+  }
+
+  /// Dispose of the ad when it's no longer needed.
+  void disposeRewardedInterstitialAd() {
+    _rewardedInterstitialAd?.dispose();
+    _rewardedInterstitialAd = null;
   }
 }
