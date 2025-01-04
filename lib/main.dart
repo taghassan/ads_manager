@@ -10,6 +10,45 @@ export 'package:ads_manager/main.dart';
 export 'ads_interval.dart';
 export 'ads_service.dart';
 
+enum AdsButtonType { textButton, floatingActionButton }
+
+class AdsManagerHelper {
+  static openAdsPage({bool? stayAwake, bool? isTestDevice = true}) async {
+    await initGoogleAdsService(
+        stayAwake: stayAwake, isTestDevice: isTestDevice);
+    if (!Get.isRegistered<AdsIntervalController>()) {
+      Get.lazyPut(
+        () => AdsIntervalController(),
+      );
+    }
+    Get.find<AdsIntervalController>().fetchGithubAds();
+    Get.to(() => const AdsInterval());
+  }
+
+ static Widget openAdsButton(
+      {bool? stayAwake=true,
+      bool? isTestDevice = true,
+      AdsButtonType adsButtonType = AdsButtonType.textButton}) {
+    var child = const Text("إدعمنا في مركز الإعلانات");
+    var onPressed = openAdsPage(
+      stayAwake: true,
+    );
+
+    switch (adsButtonType) {
+      case AdsButtonType.textButton:
+        return TextButton(
+          onPressed:  onPressed,
+          child: child,
+        );
+      case AdsButtonType.floatingActionButton:
+        return FloatingActionButton(
+          onPressed: onPressed,
+          child: const Icon(Icons.ads_click),
+        );
+    }
+  }
+}
+
 openAdsPage({bool? stayAwake, bool? isTestDevice = true}) async {
   await initGoogleAdsService(stayAwake: stayAwake, isTestDevice: isTestDevice);
   if (!Get.isRegistered<AdsIntervalController>()) {
