@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:ads_manager/ads_service.dart';
 import 'package:ads_manager/consent_manager.dart';
 import 'package:ads_manager/models/ads_init_config.dart';
+import 'package:ads_manager/native_ads_list.dart';
 import 'package:ads_manager/widgets/ad_dialog.dart';
 import 'package:app_logger/app_logger.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,7 @@ class AdsIntervalController extends FullLifeCycleController
   final ScrollController scrollController = ScrollController();
   Timer? scrollTimer;
   bool isScrolling = false;
+  GithubClient client = GithubClient(owner: "taghassan");
 
   var _isMobileAdsInitializeCalled = false;
   var _isPrivacyOptionsRequired = false;
@@ -151,35 +153,10 @@ class AdsIntervalController extends FullLifeCycleController
     } catch (_) {}
   }
 
-  initInterval({bool? useManagerNativeAds = false}) {
-    // AppLogger.it.logInfo("uniqueAdsList $uniqueAdsList");
-    // uniqueAdsList.shuffle(Random());
-    // initAds(
-    //     adUnitIds: useManagerNativeAds == false
-    //         ? uniqueAdsList
-    //         : (adsInitConfig?.nativeAdUnitIds ??
-    //             [
-    //               'ca-app-pub-8107574011529731/1677462684',
-    //               'ca-app-pub-8107574011529731/3520897512',
-    //               'ca-app-pub-8107574011529731/9695984706',
-    //               'ca-app-pub-8107574011529731/9894734170',
-    //               'ca-app-pub-8107574011529731/3876120737',
-    //               'ca-app-pub-8107574011529731/6893898838',
-    //               'ca-app-pub-8107574011529731/1305797714',
-    //               'ca-app-pub-8107574011529731/7123260860',
-    //               'ca-app-pub-8107574011529731/3403507702',
-    //               'ca-app-pub-8107574011529731/6303534606',
-    //               'ca-app-pub-8107574011529731/5899648847'
-    //             ]));
-  }
-
   fetchGithubAds() async {
     try {
       packageInfo = await PackageInfo.fromPlatform();
       update();
-      GithubClient client = GithubClient(
-          owner: "taghassan",
-          token: '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');
 
       late BaseDataModel? response;
       if (packageInfo != null) {
@@ -212,6 +189,15 @@ class AdsIntervalController extends FullLifeCycleController
         );
       }
     } catch (e) {
+      var localAdsConfig = AdsInitConfig.fromJson(localAdsObject);
+      adsInitConfig = localAdsConfig;
+      update();
+      Future.delayed(
+        const Duration(seconds: 1),
+        () => initIntervalAds(
+            useManagerNativeAds: true, adsConfig: adsInitConfig),
+      );
+      AppLogger.it.logInfo("localAdsObject ${localAdsObject}");
       AppLogger.it.logError("GithubClient response error $e");
     }
   }
@@ -246,8 +232,8 @@ class AdsIntervalController extends FullLifeCycleController
 
     // runs every 1 second
     timer = Timer.periodic(Duration(seconds: timeStep), (timer) async {
-      AppLogger.it.logInfo(timer.tick.toString());
-      AppLogger.it.logInfo(appLifecycleState.name);
+      // AppLogger.it.logInfo(timer.tick.toString());
+      // AppLogger.it.logInfo(appLifecycleState.name);
       if (appLifecycleState != AppLifecycleState.resumed) return;
       if (timer.tick % 60 == 0) {
         await showFullScreenAd();
@@ -388,104 +374,121 @@ class AdsInterval extends GetView<AdsIntervalController> {
           backgroundColor: Colors.grey,
           title: Text(
               "${controller.formattedTime(timeInSecond: controller.timer?.tick ?? 1)} - (${controller.timeStep})"),
-          actions: [
-            if (controller.failedToLoadAds.isNotEmpty) ...[
-              IconButton(
-                  onPressed: () => Get.defaultDialog(
-                      title:
-                          "Total (${controller.failedToLoadAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})",
-                      content: SizedBox(
-                        height: Get.height * 0.7,
-                        width: Get.width,
-                        child: ListView.builder(
-                          itemCount: (controller.failedToLoadAds).length,
-                          itemBuilder: (context, index) => Column(
-                            children: [
-                              Container(
-                                  padding: const EdgeInsets.all(15),
-                                  decoration:
-                                      const BoxDecoration(color: Colors.white),
-                                  child: ListTile(
-                                    title: Text(
-                                      "$index - ${controller.failedToLoadAds[index].adUnitId ?? ''}",
+          bottom: PreferredSize(
+            preferredSize: const Size.fromHeight(4.0),
+            child: Container(
+              color: Colors.white,
+              height: 35,
+              child: Center(
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    if (controller.failedToLoadAds.isNotEmpty) ...[
+                      IconButton(
+                          onPressed: () => Get.defaultDialog(
+                              title:
+                                  "Total (${controller.failedToLoadAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})",
+                              content: SizedBox(
+                                height: Get.height * 0.7,
+                                width: Get.width,
+                                child: ListView.builder(
+                                  itemCount:
+                                      (controller.failedToLoadAds).length,
+                                  itemBuilder: (context, index) => Column(
+                                    children: [
+                                      Container(
+                                          padding: const EdgeInsets.all(15),
+                                          decoration: const BoxDecoration(
+                                              color: Colors.white),
+                                          child: ListTile(
+                                            title: Text(
+                                              "$index - ${controller.failedToLoadAds[index].adUnitId ?? ''}",
+                                            ),
+                                            subtitle: Text(
+                                              controller.failedToLoadAds[index]
+                                                      .error?.message ??
+                                                  '',
+                                            ),
+                                          )),
+                                      const Divider(),
+                                    ],
+                                  ),
+                                ),
+                              )),
+                          icon: const Icon(
+                            Icons.warning_amber,
+                            color: Colors.amber,
+                          )),
+                    ],
+                    IconButton(
+                        onPressed: () => Get.defaultDialog(
+                            title:
+                                "Total (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})",
+                            content: SizedBox(
+                              height: Get.height * 0.7,
+                              width: Get.width,
+                              child: ListView.builder(
+                                itemCount: (controller
+                                            .adsInitConfig?.nativeAdUnitIds ??
+                                        [])
+                                    .length,
+                                itemBuilder: (context, index) => Column(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(15),
+                                      decoration: BoxDecoration(
+                                          color: controller.isAdLoaded(
+                                                  adId: controller.adsInitConfig
+                                                              ?.nativeAdUnitIds?[
+                                                          index] ??
+                                                      '')
+                                              ? Colors.green
+                                              : Colors.white),
+                                      child: Text(
+                                        "$index - ${controller.adsInitConfig?.nativeAdUnitIds?[index] ?? ''}",
+                                        style: TextStyle(
+                                            color: controller.isAdLoaded(
+                                                    adId: controller
+                                                                .adsInitConfig
+                                                                ?.nativeAdUnitIds?[
+                                                            index] ??
+                                                        '')
+                                                ? Colors.white
+                                                : null),
+                                      ),
                                     ),
-                                    subtitle: Text(
-                                      controller.failedToLoadAds[index].error
-                                              ?.message ??
-                                          '',
-                                    ),
-                                  )),
-                              const Divider(),
-                            ],
-                          ),
-                        ),
-                      )),
-                  icon: const Icon(
-                    Icons.warning_amber,
-                    color: Colors.amber,
-                  )),
-            ],
-            IconButton(
-                onPressed: () => Get.defaultDialog(
-                    title:
-                        "Total (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})",
-                    content: SizedBox(
-                      height: Get.height * 0.7,
-                      width: Get.width,
-                      child: ListView.builder(
-                        itemCount:
-                            (controller.adsInitConfig?.nativeAdUnitIds ?? [])
-                                .length,
-                        itemBuilder: (context, index) => Column(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(15),
-                              decoration: BoxDecoration(
-                                  color: controller.isAdLoaded(
-                                          adId: controller.adsInitConfig
-                                                  ?.nativeAdUnitIds?[index] ??
-                                              '')
-                                      ? Colors.green
-                                      : Colors.white),
-                              child: Text(
-                                "$index - ${controller.adsInitConfig?.nativeAdUnitIds?[index] ?? ''}",
-                                style: TextStyle(
-                                    color: controller.isAdLoaded(
-                                            adId: controller.adsInitConfig
-                                                    ?.nativeAdUnitIds?[index] ??
-                                                '')
-                                        ? Colors.white
-                                        : null),
+                                    const Divider(),
+                                  ],
+                                ),
                               ),
-                            ),
-                            const Divider(),
-                          ],
-                        ),
-                      ),
-                    )),
-                icon: const Icon(Icons.list_alt)),
-            controller.isScrolling
-                ? IconButton(
-                    onPressed: () => controller.stopAutoScroll(),
-                    icon: const Icon(Icons.public_off_sharp))
-                : IconButton(
-                    onPressed: () => controller.startAutoScroll(),
-                    icon: const Icon(Icons.public)),
-            controller.timer?.isActive == true
-                ? IconButton(
-                    onPressed: () {
-                      controller.timer?.cancel();
-                      controller.update();
-                    },
-                    icon: const Icon(Icons.stop_circle_outlined))
-                : IconButton(
-                    onPressed: () {
-                      controller.startAdsTimer();
-                      controller.update();
-                    },
-                    icon: const Icon(Icons.play_arrow_outlined)),
-            Text(controller.getNextAdType)
-          ],
+                            )),
+                        icon: const Icon(Icons.list_alt)),
+                    controller.isScrolling
+                        ? IconButton(
+                            onPressed: () => controller.stopAutoScroll(),
+                            icon: const Icon(Icons.public_off_sharp))
+                        : IconButton(
+                            onPressed: () => controller.startAutoScroll(),
+                            icon: const Icon(Icons.public)),
+                    controller.timer?.isActive == true
+                        ? IconButton(
+                            onPressed: () {
+                              controller.timer?.cancel();
+                              controller.update();
+                            },
+                            icon: const Icon(Icons.stop_circle_outlined))
+                        : IconButton(
+                            onPressed: () {
+                              controller.startAdsTimer();
+                              controller.update();
+                            },
+                            icon: const Icon(Icons.play_arrow_outlined)),
+                    Text(controller.getNextAdType)
+                  ],
+                ),
+              ),
+            ),
+          ),
         ),
         bottomNavigationBar: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
