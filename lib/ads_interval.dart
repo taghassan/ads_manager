@@ -543,10 +543,11 @@ class AdsInterval extends GetView<AdsIntervalController> {
                           width: Get.width,
                           height: 80,
                           child: Card(
+
                             margin: const EdgeInsets.all(10),
                             child: Center(
                               child: Text(
-                                  "Item $index (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})"),
+                                  "Item $index (${controller.loadedSuccessfullyAds.length}/${controller.adsInitConfig?.nativeAdUnitIds?.length ?? 0})",style: const TextStyle(color: Colors.black87),),
                             ),
                           ),
                         ),
