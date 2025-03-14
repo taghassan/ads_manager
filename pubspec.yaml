@@ -33,10 +33,12 @@ dependencies:
 #  easy_audience_network: ^0.0.7
   wakelock_plus:
   github_client:
-    git: https://github.com/taghassan/github_client
+    path: ../github_client
+#    git: https://github.com/taghassan/github_client
   package_info_plus:
   app_logger:
-    git: https://github.com/taghassan/app_logger
+    path: ../app_logger
+#    git: https://github.com/taghassan/app_logger
 
 dev_dependencies:
   flutter_test:
